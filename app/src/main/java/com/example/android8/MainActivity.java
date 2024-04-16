@@ -1,64 +1,78 @@
 package com.example.android8;
 
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
+import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+import android.widget.ImageView;
 
-import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.bumptech.glide.Glide;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
-    private Button btn;
-    private Handler handler;
-    private TextView tv;
+    private URL url;
+    private HttpsURLConnection myConnection;
+    private ImageView imageView;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        tv = findViewById(R.id.textView);
-        // Looper - запускает цикл обработки сообщений
-        // и стартует его в главном потоке - это вызов статического метода getMainLooper()
 
-        handler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(@NonNull Message msg) {
-                // здесь мы будем ждать сообщения из другого потока
-                int n = msg.getData().getInt("key");
-                tv.setText("N: "+ n);
-                if (n==49)
-                    btn.setEnabled(true);
-            }
-        };
-        Button btn = findViewById(R.id.button1);
-        btn.setOnClickListener(v -> {
-            btn.setEnabled(false);
-            //Создаем поток с помощью интерфейса Runnable
-            //Код для нового потока. Этот поток завершится, когда метод вернёт управление.
-            new Thread(this::doSlow).start();
-        });
-    }
-    public void doSlow() {
-        for(int i=0;i<50;i++) {
+        imageView = findViewById(R.id.imageView);
+        Button btn = findViewById(R.id.button);
+
+        btn.setOnClickListener(v -> new Thread(() -> {
             try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                url = new URL("https://random.dog/woof.json");
+                myConnection = (HttpsURLConnection) url.openConnection();
+
+                if (myConnection.getResponseCode() == 200) {
+                    InputStream responseBody = myConnection.getInputStream();
+                    InputStreamReader responseBodyReader =
+                            new InputStreamReader(responseBody, StandardCharsets.UTF_8);
+
+                    JsonReader jsonReader = new JsonReader(responseBodyReader);
+                    jsonReader.beginObject();
+
+                    while (jsonReader.hasNext()) {
+                        String key = jsonReader.nextName();
+
+                        if (key.equals("url")) {
+                            String value = jsonReader.nextString();
+                            Log.d("RRR", "URL: " + value);
+                            runOnUiThread(() -> Glide.with(MainActivity.this)
+                                    .load(value)
+                                    .into(imageView));
+
+                        } else {
+                            jsonReader.skipValue();
+                        }
+                    }
+
+                    jsonReader.endObject();
+                    jsonReader.close();
+
+                } else {
+                    Log.d("RRR", "FAILED TO ESTABLISH CONNECTION");
+                }
+
+            } catch (IOException e) {
+                Log.e("RRR", "Error", e);
             }
-            Message message = new Message();
-            Bundle bundle = new Bundle();
-            bundle.putInt("key",i);
-            message.setData(bundle);
-            handler.sendMessage(message);
-        }
+        }).start());
     }
 }
 
