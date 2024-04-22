@@ -1,78 +1,73 @@
 package com.example.android8;
 
 import android.os.Bundle;
-import android.util.JsonReader;
-import android.util.Log;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.bumptech.glide.Glide;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
-import javax.net.ssl.HttpsURLConnection;
-
 public class MainActivity extends AppCompatActivity {
-    private URL url;
-    private HttpsURLConnection myConnection;
-    private ImageView imageView;
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageView = findViewById(R.id.imageView);
-        Button btn = findViewById(R.id.button);
+        textView = findViewById(R.id.textView);
 
-        btn.setOnClickListener(v -> new Thread(() -> {
-            try {
-                url = new URL("https://random.dog/woof.json");
-                myConnection = (HttpsURLConnection) url.openConnection();
+        runTask1();
+    }
 
-                if (myConnection.getResponseCode() == 200) {
-                    InputStream responseBody = myConnection.getInputStream();
-                    InputStreamReader responseBodyReader =
-                            new InputStreamReader(responseBody, StandardCharsets.UTF_8);
+    private void runTask1() {
+        Thread thread1 = new Thread(() -> {
 
-                    JsonReader jsonReader = new JsonReader(responseBodyReader);
-                    jsonReader.beginObject();
+            for (int i = 0; i < 5; i++){
+                textView.setText(i + " Task1");
 
-                    while (jsonReader.hasNext()) {
-                        String key = jsonReader.nextName();
-
-                        if (key.equals("url")) {
-                            String value = jsonReader.nextString();
-                            Log.d("RRR", "URL: " + value);
-                            runOnUiThread(() -> Glide.with(MainActivity.this)
-                                    .load(value)
-                                    .into(imageView));
-
-                        } else {
-                            jsonReader.skipValue();
-                        }
-                    }
-
-                    jsonReader.endObject();
-                    jsonReader.close();
-
-                } else {
-                    Log.d("RRR", "FAILED TO ESTABLISH CONNECTION");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.getCause();
                 }
-
-            } catch (IOException e) {
-                Log.e("RRR", "Error", e);
             }
-        }).start());
+            mainHandler.post(this::runTask2);
+        });
+        thread1.start();
+    }
+    
+    private void runTask2() {
+        Thread thread2 = new Thread(() -> {
+            for (int i = 0; i < 5; i++){
+                textView.setText(i + " Task2");
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.getCause();
+                }
+            }
+           mainHandler.post(this::runTask3);
+        });
+        thread2.start();
+    }
+
+    private void runTask3() {
+        Thread thread3 = new Thread(() -> {
+            for (int i = 0; i < 5; i++){
+                textView.setText(i + " Task3");
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.getCause();
+                }
+            }
+        });
+        thread3.start();
     }
 }
 
