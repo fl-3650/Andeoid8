@@ -11,6 +11,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private TextView textView;
+    private TextView textView2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,8 +19,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         textView = findViewById(R.id.textView);
+        textView2 = findViewById(R.id.textView2);
 
         runTask1();
+        runTask2();
     }
 
     private void runTask1() {
@@ -34,15 +37,14 @@ public class MainActivity extends AppCompatActivity {
                     e.getCause();
                 }
             }
-            mainHandler.post(this::runTask2);
         });
         thread1.start();
     }
     
     private void runTask2() {
         Thread thread2 = new Thread(() -> {
-            for (int i = 0; i < 5; i++){
-                textView.setText(i + " Task2");
+            for (int i = 5; i >= 0; i--){
+                textView2.setText(i + " Task2");
 
                 try {
                     Thread.sleep(1000);
@@ -50,24 +52,8 @@ public class MainActivity extends AppCompatActivity {
                     e.getCause();
                 }
             }
-           mainHandler.post(this::runTask3);
         });
         thread2.start();
-    }
-
-    private void runTask3() {
-        Thread thread3 = new Thread(() -> {
-            for (int i = 0; i < 5; i++){
-                textView.setText(i + " Task3");
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.getCause();
-                }
-            }
-        });
-        thread3.start();
     }
 }
 
